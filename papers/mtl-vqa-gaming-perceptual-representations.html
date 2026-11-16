@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="MTL-VQA 論文筆記：以多任務全參考指標預訓練遊戲影片品質表徵，整理架構、資料集、評估協定、原文結果與 AI 分析。">
+  <title>MTL-VQA: Gaming Perceptual Representations | VLM Research Wiki</title>
+  <link rel="stylesheet" href="../assets/css/style.css">
+  <script defer src="../assets/js/main.js"></script>
+</head>
+<body>
+<header class="site-header"><div class="container topbar">
+  <a class="brand" href="../index.html"><span class="brand-mark">V</span><span>VLM Research Wiki<small>Research knowledge base</small></span></a>
+  <button class="menu-toggle" aria-expanded="false" aria-label="Toggle navigation">Menu</button>
+  <nav class="nav" aria-label="Main navigation"><a href="../index.html">Home</a><a href="../papers/index.html">Papers</a><a href="../datasets/index.html">Datasets</a><a href="../models/index.html">Models</a><a href="../experiments/index.html">Experiments</a><a href="../topics/index.html">Topics</a></nav>
+</div></header>
+<main>
+<section class="page-hero"><div class="container">
+  <div class="breadcrumb"><a href="../index.html">Home</a> / <a href="index.html">Papers</a> / MTL-VQA</div>
+  <h1 lang="en">Learning Perceptual Representations for Gaming NR-VQA with Multi-Task FR Signals</h1>
+  <p>MTL-VQA：以多任務全參考監督訊號，學習可遷移的遊戲影片品質表徵。</p>
+</div></section>
+<section class="container content" aria-label="Paper research note">
+  <p><span class="tag">Research Paper</span> <span class="tag">2026</span> <span class="tag">Gaming NR-VQA</span> <span class="tag">Reviewed: 2026-11-16</span></p>
+  <div class="callout"><strong>Evidence status：</strong>書目已與官方 arXiv 及作者網站核對（Verified）。方法與數值均為使用者提供 PDF 的作者報告（Reported by source），未由本專案重跑驗證。第 7 節為 AI 整理的分析（Our observation），不是作者結論；未知資訊明列為 Not yet verified。本文的 VQA 指 <strong>Video Quality Assessment（影片品質評估）</strong>，不是 Visual Question Answering（視覺問答）。</div>
+
+  <h2 id="bibliographic-information">1. Bibliographic information</h2>
+  <ul>
+    <li><strong>Title：</strong><span lang="en">Learning Perceptual Representations for Gaming NR-VQA with Multi-Task FR Signals</span>。</li>
+    <li><strong>Authors：</strong>Yu-Chih Chen、Michael Wang、Chieh-Dun Wen、Kai-Siang Ma、Avinab Saha、Li-Heng Chen、Alan Bovik（依提供 PDF 首頁署名）。</li>
+    <li><strong>Affiliations：</strong>National Yang Ming Chiao Tung University、The University of Texas at Austin、Netflix Inc.（PDF 第 1 頁）。</li>
+    <li><strong>Year / venue：</strong>2026；IEEE International Conference on Image Processing（ICIP）。<a href="https://sites.google.com/view/berriechen/publications">作者出版清單</a>列出此會議；<a href="https://sites.google.com/view/berriechen/home">作者首頁</a>報告於 2026 年 5 月獲接受（Reported by source）。</li>
+    <li><strong>Official record：</strong><a href="https://arxiv.org/abs/2602.11903">arXiv:2602.11903</a>，首次提交 2026-02-12，目前書目列 v3（2026-08-14）；<a href="https://doi.org/10.48550/arXiv.2602.11903">arXiv DOI</a>。</li>
+    <li><strong>Publisher link：</strong><a href="https://doi.org/10.1109/ICIP61757.2026.11630255">IEEE DOI（取自作者出版清單）</a>。DOI 轉向 IEEE Xplore，但本次無法讀取出版商頁面；出版頁細節為 Not yet verified，未將 arXiv DOI 當作會議 DOI。</li>
+    <li><strong>Inspected manuscript：</strong><a href="Multitask_Learning__ICIP_2026_.pdf">使用者提供的六頁 PDF</a>。本筆記的表格編號、方法與結果均以此檔案為準；未確認其與 arXiv 特定版本逐位元一致。</li>
+    <li><strong>Official implementation：</strong><a href="https://github.com/nycu-m3-lab/MTL-VQA">nycu-m3-lab/MTL-VQA</a>，由作者出版清單的 Code 連結確認。未執行其程式碼。</li>
+  </ul>
+
+  <h2 id="research-problem">2. Research problem and motivation</h2>
+  <p><strong>Reported by source：</strong>雲端遊戲用戶端通常沒有原始參考影片，因此推論需採 No-reference Video Quality Assessment（NR-VQA，無參考影片品質評估）。遊戲影片的快速運動、風格化材質、HUD（畫面介面疊圖）與壓縮失真，可能使自然影片模型難以遷移；人類主觀評分資料也有限。僅以單一 Full-reference（FR，全參考）品質指標預訓練，可能受到該代理指標偏差影響。（PDF 第 1–2 頁，§1–2）</p>
+  <h3 id="research-question">Research question</h3>
+  <p>作者探討：能否結合多種互補的 FR 監督訊號，學習可遷移的品質特徵，再以凍結特徵與輕量回歸器，改善跨資料集及少量人類標籤情境下的遊戲 NR-VQA？此為依作者動機整理的研究問題。（PDF §1、§3）</p>
+  <p><strong>研究定位：</strong>本文主要模型為 ResNet-50 與品質回歸器，沒有文字輸入或語言分支；屬於本站影片品質評估與遷移研究範圍，不應稱為視覺語言模型或多模態語言模型。</p>
+
+  <h2 id="method-overview">3. Method overview and model architecture</h2>
+  <p><strong>Reported by source：</strong>Fig. 1 與 §3 描述兩階段流程：先用可取得參考影片的 PGC（Professionally Generated Content，專業產製內容）學習表徵，再凍結編碼器，對目標遊戲影片進行 NR 品質預測。</p>
+  <ol>
+    <li><strong>產生代理監督：</strong>以 ffmpeg 將原始參考影片壓縮為 0.25、0.5、1、2、5 Mbps，其他編碼參數固定；計算壓縮影片與參考影片間的 FR 分數。作者報告共有 885,000 個訓練影格。（§3.1）</li>
+    <li><strong>共享編碼器：</strong>以 ImageNet 初始化的 ResNet-50 擷取影格特徵；預設三個任務分別以 MLP（Multilayer Perceptron，多層感知器）預測 VMAF、SSIM、MS-SSIM。（§3.4–3.5）</li>
+    <li><strong>多任務最佳化：</strong>每個任務使用 Smooth-L1 loss，β = 1。先計算各任務對共享編碼器的梯度，再以 MGDA（Multiple Gradient Descent Algorithm）／MinNormSolver 尋找非負、總和為 1 的任務權重，藉加權聯合損失更新編碼器與任務 head。（§3.2）</li>
+    <li><strong>下游品質預測：</strong>凍結編碼器，將影格特徵做 temporal mean pooling（時間平均池化），再由回歸器輸出影片品質。標準切分使用 RBF-kernel SVR（徑向基底核支援向量回歸）；few-shot 另評估 Ridge regression（嶺迴歸）。（§3.4、§4.1）</li>
+  </ol>
+  <p><strong>預設代理指標：</strong>SSIM 為結構相似度、MS-SSIM 為多尺度結構相似度、VMAF 為 Video Multimethod Assessment Fusion。作者根據訓練資料的 FR-to-MOS 對齊情形選擇三者，並以 FovVideoVDP 組合做消融；它們是預訓練目標，不是下游主要評估指標。（Table 1、§3.5、Table 3）</p>
+  <p><strong>實作條件：</strong>原文報告預訓練每兩影格取一影格、縮放至 960 × 540，使用 SGD、batch size 20。評估每秒均勻取一影格；LIVE-Meta MCG 採資料集提供的顯示尺寸，其餘評估集縮放為 960 × 540。（§3.4、§4.1）</p>
+  <div class="callout"><strong>標籤使用範圍：</strong>FR 代理預訓練不直接使用人類品質標籤作為訓練目標，但預設代理組合的選擇參考了 FR-to-MOS 分析；標準切分及 few-shot 的下游回歸器仍需目標 MOS（Mean Opinion Score，平均主觀評分）。不能將整套流程稱為完全無人類標籤，也不能將 NR 推論等同 zero-shot。</div>
+
+  <h2 id="datasets-and-protocol">4. Datasets and evaluation protocol</h2>
+  <h3 id="datasets">Datasets</h3>
+  <p><strong>Reported by source：</strong>下列名稱、用途與規模取自提供 PDF 的 §3.1、Fig. 2 及 Table 2；規模尚未逐一與原始 Dataset 官方版本核對。來源與評估語料分離，是作者的設計報告，不代表本專案已獨立稽核跨語料內容重複。</p>
+  <ul>
+    <li><strong>GamingVideoSET、KUGVD、CGVDS：</strong>PGC 代理預訓練來源。Fig. 2 分別標示 90、90、340 videos；此處不將這些圖中規模當作新增壓縮後的訓練影片總數，也不將 885,000 影格當成影片數。</li>
+    <li><strong>LIVE-Meta MCG：</strong>PGC 評估集；Table 2 標示 600 videos。</li>
+    <li><strong>LIVE-YouTube Gaming：</strong>UGC（User Generated Content，使用者產製內容）評估集；Table 2 標示 600 videos。</li>
+    <li><strong>YouTube UGC-Gaming：</strong>YouTube UGC 的遊戲子集；Table 2 標示 108 videos，不是完整 YouTube UGC Dataset 的規模。</li>
+  </ul>
+  <p>目前尚無上述 Dataset 的本站獨立條目，因此不建立空白或不存在的連結；資料集授權、主觀評分程序與版本仍須未來依各官方來源另行整理。</p>
+  <h3 id="evaluation-protocols">Three evaluation protocols</h3>
+  <ul>
+    <li><strong>Zero-shot：</strong>§4.1 定義為 FR 預訓練編碼器凍結，以來源 PGC 的 MOS 訓練 MLP head，再直接套用目標資料集，不使用目標標籤。Table 4 的 K = 0 卻列為 SVR／Ridge 跨資料集遷移，與此段 head 描述有差異，須查明實際設定。</li>
+    <li><strong>Few-shot：</strong>編碼器凍結，以目標資料集 K ∈ {10, 20, 50, 100} 個有標籤片段擬合 SVR 或 Ridge，在剩餘片段評估；作者報告 100 次隨機 K 抽樣的中位數。（§4.1、Table 4）</li>
+    <li><strong>Standard split：</strong>每個評估集做 100 次獨立 content-disjoint（內容不重疊）80%／20% 訓練／測試切分；訓練部分再做依內容切分的五折交叉驗證，以 grid search 選擇 SVR 的 C、γ，再於完整訓練部分重訓。這項協定會使用目標資料集 MOS。（§4.1、Table 2）</li>
+  </ul>
+  <h3 id="evaluation-metrics">Evaluation metrics</h3>
+  <ul>
+    <li><strong>SRCC：</strong>Spearman Rank Correlation Coefficient，衡量預測與 MOS 的排序一致性；越高越好。</li>
+    <li><strong>KRCC：</strong>Kendall Rank Correlation Coefficient，另一種排序一致性指標；越高越好。</li>
+    <li><strong>PLCC：</strong>Pearson Linear Correlation Coefficient，衡量線性相關程度；越高越好。</li>
+    <li><strong>RMSE：</strong>Root Mean Square Error，均方根誤差；越低越好，不能忽略 MOS 尺度而直接跨資料集比較。</li>
+  </ul>
+  <p>原文 §4.1 指出 SRCC／KRCC 使用未映射預測，PLCC／RMSE 使用 logistic mapping 後的預測，重複切分結果報中位數。原文未充分交代 logistic mapping 的擬合資料與參數；解讀 PLCC 時須保留此不確定性。</p>
+
+  <h2 id="main-results">5. Main results and authors’ conclusions</h2>
+  <p><strong>Reported by source；未重跑：</strong>下表逐項轉錄 PDF 第 5 頁 Table 2 的 MTL-VQA 預設組合結果，屬於 standard split，並非 zero-shot。</p>
+  <div style="overflow-x:auto" tabindex="0" role="region" aria-label="Table 2 results, horizontally scrollable">
+  <table>
+    <caption>MTL-VQA：100 次切分的中位數（PDF Table 2）</caption>
+    <thead><tr><th scope="col">Dataset</th><th scope="col">SRCC ↑</th><th scope="col">KRCC ↑</th><th scope="col">PLCC ↑</th><th scope="col">RMSE ↓</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">LIVE-Meta MCG</th><td>0.9434</td><td>0.7951</td><td>0.9506</td><td>5.7912</td></tr>
+      <tr><th scope="row">LIVE-YouTube Gaming</th><td>0.8486</td><td>0.6681</td><td>0.8758</td><td>8.1330</td></tr>
+      <tr><th scope="row">YouTube UGC-Gaming</th><td>0.8292</td><td>0.6468</td><td>0.8643</td><td>0.2924</td></tr>
+    </tbody>
+  </table></div>
+  <p>作者將 LIVE-Meta MCG 表現描述為具競爭力：MTL-VQA 的 SRCC 0.9434 接近 GAMIVAL 的 0.9439。在 YouTube UGC-Gaming，預設 MTL-VQA 的 SRCC 高於 Table 2 所列其他方法。但部分 LIVE-YouTube Gaming baseline 數值以星號標記為引用 GAME-VQP 作者的結果；不能假定所有比較均由本篇重新執行，也不能據此宣稱統計顯著優勢。（§4.2、Table 2）</p>
+  <h3 id="ablation-results">Single-proxy vs. multi-proxy ablation</h3>
+  <p>Table 3 的 SRCC：VMAF-only ST-VQA → 預設 MTL-VQA，在 LIVE-Meta MCG 為 0.8965 → 0.9434，LIVE-YouTube Gaming 為 0.8254 → 0.8486，YouTube UGC-Gaming 為 0.7377 → 0.8292。這是作者報告的消融比較，不是我們重現的結果。</p>
+  <p>預設組合並非每個資料集最佳：在 YouTube UGC-Gaming，VMAF + MS-SSIM + FovVideoVDP 達 SRCC 0.8680、PLCC 0.8980，優於預設組合；作者認為代理組合的最佳選擇具有資料集相依性。（§4.3、Table 3）</p>
+  <h3 id="few-shot-results">Few-shot results</h3>
+  <p>以下僅摘錄 YouTube UGC-Gaming 的 Ridge 結果（PDF Table 4），保留與 standard split 的區別：</p>
+  <div style="overflow-x:auto" tabindex="0" role="region" aria-label="Table 4 Ridge results, horizontally scrollable">
+  <table>
+    <caption>YouTube UGC-Gaming / Ridge（PDF Table 4）</caption>
+    <thead><tr><th scope="col">Target labels K</th><th scope="col">SRCC ↑</th><th scope="col">PLCC ↑</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">0 (source transfer)</th><td>0.6434</td><td>0.7370</td></tr>
+      <tr><th scope="row">10</th><td>0.5937</td><td>0.6611</td></tr>
+      <tr><th scope="row">20</th><td>0.6679</td><td>0.7273</td></tr>
+      <tr><th scope="row">50</th><td>0.7449</td><td>0.8040</td></tr>
+      <tr><th scope="row">100</th><td>0.7857</td><td>0.9301</td></tr>
+    </tbody>
+  </table></div>
+  <p>作者指出極低資料量時 Ridge 較 SVR 穩定；LIVE-YouTube Gaming 的 K = 10、SVR PLCC 在 Table 4 為「–」，§4.2 將其描述為未定義的相關值，不能當成 0。作者認為預訓練特徵能支援少量標籤校準，並在結論中提出表徵品質可能比回歸器複雜度更重要的解釋。這是作者的推論，並非因果證明。</p>
+
+  <h2 id="authors-limitations">6. Authors’ stated limitations and future work</h2>
+  <ul>
+    <li>極低品質片段的 HUD 可能主導池化特徵；作者提出 HUD-aware masking 作為未來方向。（§5）</li>
+    <li>快速運動與閃爍需要更強的時間建模；作者另提出 codec／artifact-aware 輔助任務。（§5）</li>
+    <li>沒有對所有資料集均最佳的代理組合；target-aware proxy selection，以及納入 LPIPS、DISTS 等指標，仍屬未來工作。（§4.3）</li>
+    <li>大幅領域差異下，沒有目標監督的遷移仍具挑戰。（§4.2）</li>
+  </ul>
+
+  <h2 id="our-analysis">7. Our analysis and possible Research Gaps</h2>
+  <p><strong>Our observation / AI analysis：</strong>以下是依原文進行的分析與待驗證問題，並非作者原句或已完成實驗；未替本專案決定新的 benchmark 或研究方法。</p>
+  <ul>
+    <li><strong>遷移與 zero-shot 必須分開：</strong>代理預訓練語料與目標語料不同，支持「表徵跨資料集遷移」的研究定位；但 Table 2 的回歸器使用目標 MOS，其高相關不能直接證明 target-label-free 表現。</li>
+    <li><strong>Few-shot 的測試規模：</strong>依原文 108 支影片與「剩餘片段測試」規則推算，K = 100 時每次僅剩 8 支影片。PLCC 0.9301 應連同測試規模解讀，不能與不同測試集合的 Table 2 PLCC 直接比較。原文未提供此數值的信賴區間；評估更大、固定測試集是可討論的研究方向。</li>
+    <li><strong>提升並非逐點單調：</strong>Table 4 的 YouTube UGC-Gaming / Ridge 在 K = 10 時低於 K = 0；因此應描述整體較多標籤的改善趨勢，不能聲稱每增加標籤都改善。</li>
+    <li><strong>協定與版本需要對齊：</strong>§4.1 的 zero-shot MLP 與 Table 4 的 SVR／Ridge 描述需釐清；官方 README 的部分重現步驟使用 mean，而本 PDF 報 median，且提及本 PDF 沒有的 Table 5。應鎖定論文版本、checkpoint、聚合方式與實際資料子集，再設計重現。（<a href="https://github.com/nycu-m3-lab/MTL-VQA#reproduce-paper-tables">官方重現說明</a>；存取 2026-11-16）</li>
+    <li><strong>預訓練細節差異：</strong>PDF 報 batch size 20，官方 README 的訓練命令使用 320；兩者是否對應不同版本或設定尚未驗證，本文不自行修正原文數字。</li>
+    <li><strong>最佳化機制的獨立效果：</strong>Table 3 比較單任務與多任務／代理子集，但未單獨隔離等權重與 MGDA 的差異。不能將所有增益歸因於梯度平衡；此為可進一步驗證的機制問題。</li>
+    <li><strong>部署主張的證據：</strong>作者提出實用、低延遲雲端遊戲品質監測的方向，但提供 PDF 未報明確硬體、推論延遲、FPS 或成本測量；尚不能據此確認特定裝置上的即時效能。</li>
+    <li><strong>與 VLM 的可能連結：</strong>以語言輔助辨識失真、HUD 或時間事件，可作為未來假說；本文沒有執行相關 VLM 實驗，也沒有支持此方向有效的直接結果。</li>
+  </ul>
+
+  <h2 id="references">8. References and source links</h2>
+  <p>檢閱與線上來源存取日期：<time datetime="2026-11-16">2026-11-16</time>。所有實驗數據均來自下列第一項 PDF，不混入其他版本的實驗值。</p>
+  <ol>
+    <li><a href="Multitask_Learning__ICIP_2026_.pdf">提供的論文全文（6 pages）</a>：第 1 頁 Fig. 1 與署名；第 2–4 頁 §3–4.1；第 5 頁 Tables 2–4 與 §5；第 6 頁參考文獻。</li>
+    <li><a href="https://arxiv.org/abs/2602.11903">官方 arXiv 書目</a>：核對題名、作者、年份、版本歷史與 ICIP 註記。</li>
+    <li><a href="https://sites.google.com/view/berriechen/publications">作者出版清單</a>與<a href="https://sites.google.com/view/berriechen/home">作者首頁</a>：核對會議、接受消息、Paper DOI 與 Code 連結。</li>
+    <li><a href="https://github.com/nycu-m3-lab/MTL-VQA">官方 GitHub repository</a>：核對實作來源與待釐清的重現設定；未獨立驗證其重現聲明。</li>
+    <li><a href="https://doi.org/10.1109/ICIP61757.2026.11630255">作者提供的 IEEE DOI</a>：轉向 IEEE Xplore，出版頁內容本次無法讀取。</li>
+  </ol>
+  <p><strong>Related navigation：</strong><a href="index.html">Papers</a> · <a href="../topics/index.html">Research Topics</a> · <a href="../datasets/index.html">Datasets</a> · <a href="../models/index.html">Models</a> · <a href="../experiments/index.html">Experiments</a>。這些是分類入口，不代表已建立對應研究條目或完成重現實驗。</p>
+</section>
+</main>
+<footer class="site-footer"><div class="container footer-inner"><span>VLM Research Wiki</span><a href="index.html">Back to category ↑</a></div></footer>
+</body>
+</html>
